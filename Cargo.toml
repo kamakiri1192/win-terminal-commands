@@ -3,6 +3,16 @@ name = "win-terminal-commands"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+# gzip/gunzip use DEFLATE (RFC 1951). The pure-Rust `rust_backend`
+# (miniz_oxide) keeps the build dependency-free on the C side, so it works
+# with both the MSVC and GNU toolchains.
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+
+[lib]
+name = "win_terminal_commands"
+path = "src/lib.rs"
+
 [[bin]]
 name = "which"
 path = "src/bin/which.rs"
@@ -10,3 +20,11 @@ path = "src/bin/which.rs"
 [[bin]]
 name = "open"
 path = "src/bin/open.rs"
+
+[[bin]]
+name = "gzip"
+path = "src/bin/gzip.rs"
+
+[[bin]]
+name = "gunzip"
+path = "src/bin/gunzip.rs"
