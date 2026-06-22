@@ -1,8 +1,22 @@
 # win-terminal-commands
 
-Linux でよく使うコマンドを Windows でも使いやすくするための Rust CLI 集です。
+macOS、Linux でよく使うコマンドを Windows でも使いやすくするための Rust CLI 集です。  
+Windows公式で配布されているCoreutilsでカバーされないコマンドを実装して、普段のmacOSでの開発に近い感覚でCLI操作ができるようになることを目指します。
 
 `which` と `open` を実装しています。
+
+
+### Tips: Windows公式のUNIX スタイルのコマンドライン ユーティリティのセット
+Coreutilsはlsやtailなどを使用できるようになるWindows公式ユーリティです。  
+まずは、こちらもインストールすることを推奨します。
+
+**Coreutils for Windows**
+- https://learn.microsoft.com/ja-jp/windows/core-utils/overview
+- https://github.com/microsoft/coreutils
+
+```
+winget install Microsoft.Coreutils
+```
 
 ## Rust 環境
 
