@@ -51,11 +51,14 @@ jobs:
         run: |
           $tag = '${{ steps.tag.outputs.value }}'
           $name = "win-terminal-commands-${tag}-x86_64-windows.zip"
-          # which.exe と open.exe を ZIP のルートに詰める
-          Compress-Archive `
-            -Path target\release\which.exe, target\release\open.exe `
-            -DestinationPath $name -Force
-          Write-Host "Created $name"
+          # Cargo.toml の bin targets を自動収集（コマンド追加で書き換え不要）
+          $bins = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages[0].targets |
+            Where-Object { $_.kind -contains 'bin' } |
+            Select-Object -ExpandProperty name
+          $files = @($bins | ForEach-Object { "target\release\$_.exe" })
+          if ($files.Count -eq 0) { throw "bin target が見つかりません" }
+          Compress-Archive -Path $files -DestinationPath $name -Force
+          Write-Host "Packed: $($files -join ', ')"
           "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         id: zip
 
