@@ -1,0 +1,70 @@
+name: release
+
+# Release が公開されたら、または手動実行で Windows 用バイナリをビルドして
+# その Release へ ZIP として付与する。
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '成果物を付与する Release のタグ（既存のタグと一致させる）'
+        required: true
+
+# Release asset をアップロードするために必要
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Release イベントならそのタグ、手動実行なら入力タグを確実にチェックアウト
+          ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+
+      - name: Install Rust (stable MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Resolve tag
+        id: tag
+        shell: pwsh
+        run: |
+          $tag = '${{ github.event.release.tag_name }}'
+          if (-not $tag) { $tag = '${{ github.event.inputs.tag }}' }
+          if (-not $tag) {
+            throw "tag を特定できません。Release イベントか inputs.tag が必要です。"
+          }
+          "value=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Package zip
+        shell: pwsh
+        run: |
+          $tag = '${{ steps.tag.outputs.value }}'
+          $name = "win-terminal-commands-${tag}-x86_64-windows.zip"
+          # which.exe と open.exe を ZIP のルートに詰める
+          Compress-Archive `
+            -Path target\release\which.exe, target\release\open.exe `
+            -DestinationPath $name -Force
+          Write-Host "Created $name"
+          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        id: zip
+
+      - name: Upload to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release upload `
+            '${{ steps.tag.outputs.value }}' `
+            '${{ steps.zip.outputs.name }}' `
+            --clobber
