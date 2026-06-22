@@ -10,3 +10,7 @@ path = "src/bin/which.rs"
 [[bin]]
 name = "open"
 path = "src/bin/open.rs"
+
+[[bin]]
+name = "sw_vers"
+path = "src/bin/sw_vers.rs"
