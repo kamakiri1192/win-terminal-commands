@@ -1,0 +1,69 @@
+name: release
+
+# Windows 用バイナリをビルドして Release に ZIP としてアップロードする
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'バイナリを付与するReleaseのtagを指定してください'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+
+      - name: Install Rust (stable MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Resolve tag
+        id: tag
+        shell: pwsh
+        run: |
+          $tag = '${{ github.event.release.tag_name }}'
+          if (-not $tag) { $tag = '${{ github.event.inputs.tag }}' }
+          if (-not $tag) {
+            throw "tag を特定できません。Release イベントか inputs.tag が必要です。"
+          }
+          "value=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Package zip
+        shell: pwsh
+        run: |
+          $tag = '${{ steps.tag.outputs.value }}'
+          $name = "win-terminal-commands-${tag}-x86_64-windows.zip"
+          $bins = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages[0].targets |
+            Where-Object { $_.kind -contains 'bin' } |
+            Select-Object -ExpandProperty name
+          $files = @($bins | ForEach-Object { "target\release\$_.exe" })
+          if ($files.Count -eq 0) { throw "bin target が見つかりません" }
+          Compress-Archive -Path $files -DestinationPath $name -Force
+          Write-Host "Packed: $($files -join ', ')"
+          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        id: zip
+
+      - name: Upload to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release upload `
+            '${{ steps.tag.outputs.value }}' `
+            '${{ steps.zip.outputs.name }}' `
+            --clobber
