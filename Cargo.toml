@@ -1,0 +1,12 @@
+[package]
+name = "win-terminal-commands"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "which"
+path = "src/bin/which.rs"
+
+[[bin]]
+name = "open"
+path = "src/bin/open.rs"
