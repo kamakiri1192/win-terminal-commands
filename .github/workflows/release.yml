@@ -1,17 +1,15 @@
 name: release
 
-# Release が公開されたら、または手動実行で Windows 用バイナリをビルドして
-# その Release へ ZIP として付与する。
+# Windows 用バイナリをビルドして Release に ZIP としてアップロードする
 on:
   release:
     types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: '成果物を付与する Release のタグ（既存のタグと一致させる）'
+        description: 'バイナリを付与するReleaseのtagを指定してください'
         required: true
 
-# Release asset をアップロードするために必要
 permissions:
   contents: write
 
@@ -23,7 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Release イベントならそのタグ、手動実行なら入力タグを確実にチェックアウト
           ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
 
       - name: Install Rust (stable MSVC)
@@ -51,7 +48,6 @@ jobs:
         run: |
           $tag = '${{ steps.tag.outputs.value }}'
           $name = "win-terminal-commands-${tag}-x86_64-windows.zip"
-          # Cargo.toml の bin targets を自動収集（コマンド追加で書き換え不要）
           $bins = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages[0].targets |
             Where-Object { $_.kind -contains 'bin' } |
             Select-Object -ExpandProperty name
