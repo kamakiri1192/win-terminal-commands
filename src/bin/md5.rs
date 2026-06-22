@@ -384,18 +384,22 @@ fn format_output(label: &str, hash: &str, quiet: bool, reverse: bool) -> String 
 
 /// Parse one checksum line in either GNU or BSD format.
 /// Returns `(name, lowercase_hex_hash)` when the line is recognized.
+///
+/// Parsing is strict: the line is taken verbatim (line terminators are already
+/// stripped by the caller). Nothing is trimmed, so a name keeps its exact bytes
+/// and a line with stray leading/trailing whitespace is reported as malformed
+/// rather than silently massaged into a valid entry.
 fn parse_checksum_line(line: &str) -> Option<(String, String)> {
-    let trimmed = line.trim();
-    if trimmed.is_empty() {
+    if line.is_empty() {
         return None;
     }
 
     // BSD format, case-insensitive prefix: `MD5 (name) = <hash>`.
-    if has_md5_prefix(trimmed) {
-        let rest = &trimmed[5..];
+    if has_md5_prefix(line) {
+        let rest = &line[5..];
         let close = rest.find(") = ")?;
         let name = &rest[..close];
-        let hash = rest[close + 4..].trim();
+        let hash = &rest[close + 4..];
         if is_hex32(hash) {
             return Some((name.to_string(), hash.to_ascii_lowercase()));
         }
@@ -404,12 +408,12 @@ fn parse_checksum_line(line: &str) -> Option<(String, String)> {
 
     // GNU/coreutils format: `<32-hex><space><indicator><name>`,
     // where the indicator is ` ` (text mode) or `*` (binary mode).
-    let bytes = trimmed.as_bytes();
+    let bytes = line.as_bytes();
     if bytes.len() >= 34 && bytes[32] == b' ' {
-        let hash = &trimmed[..32];
+        let hash = &line[..32];
         let indicator = bytes[33];
         if is_hex32(hash) && (indicator == b' ' || indicator == b'*') {
-            let name = trimmed[34..].trim_end();
+            let name = &line[34..];
             return Some((name.to_string(), hash.to_ascii_lowercase()));
         }
     }
@@ -762,6 +766,32 @@ mod tests {
         assert!(parse_checksum_line("not a checksum").is_none());
         assert!(parse_checksum_line("ZZ0150983cd24fb0d6963f7d28e17f72  x").is_none());
         assert!(parse_checksum_line("MD5 (x) = tooShort").is_none());
+    }
+
+    #[test]
+    fn parse_keeps_internal_spaces_verbatim() {
+        // Names are taken verbatim; surrounding whitespace is not trimmed away.
+        let (name, _) =
+            parse_checksum_line("900150983cd24fb0d6963f7d28e17f72  my  file .txt").unwrap();
+        assert_eq!(name, "my  file .txt");
+    }
+
+    #[test]
+    fn parse_rejects_leading_whitespace() {
+        // Leading whitespace shifts the hash off column 0, so the line is malformed.
+        assert!(parse_checksum_line(
+            " 900150983cd24fb0d6963f7d28e17f72  hello.txt"
+        )
+        .is_none());
+    }
+
+    #[test]
+    fn parse_rejects_trailing_whitespace_after_hash() {
+        // A stray trailing space changes the hash field length -> malformed.
+        assert!(parse_checksum_line(
+            "MD5 (x) = 900150983cd24fb0d6963f7d28e17f72 "
+        )
+        .is_none());
     }
 
     #[test]

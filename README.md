@@ -91,9 +91,13 @@ cargo build --release
 .\target\release\md5.exe README.md            # MD5 (README.md) = <hash>
 .\target\release\md5.exe -q README.md         # ハッシュだけ出力
 .\target\release\md5.exe -s "abc"             # MD5 ("abc") = 900150983cd24fb0d6963f7d28e17f72
-Get-Content file.zip | .\target\release\md5.exe   # 標準入力をハッシュ
+Write-Output "abc" | .\target\release\md5.exe # 標準入力をハッシュ（テキスト。末尾の改行も含まれます）
+.\target\release\md5.exe file.zip             # バイナリはファイル指定が安全
 .\target\release\md5.exe -c checksums.md5     # チェックサムを検証
 ```
+
+> [!NOTE]
+> バイナリファイルのチェックサムは、ファイルを直接指定してください。PowerShell の `Get-Content` は既定でテキストとしてデコードするため、`Get-Content file.zip | md5.exe` のようにパイプで渡すとバイト列が変化してしまいます。標準入力でどうしても渡したい場合は `Get-Content -AsByteStream file.zip | md5.exe`（Windows PowerShell 5.1 では `-Encoding Byte`）を使います。
 
 PATH にインストールして直接 `md5` で呼ぶこともできます。
 
