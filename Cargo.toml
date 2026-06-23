@@ -2,6 +2,7 @@
 name = "win-terminal-commands"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
 # gzip/gunzip use DEFLATE (RFC 1951). The pure-Rust `rust_backend`
