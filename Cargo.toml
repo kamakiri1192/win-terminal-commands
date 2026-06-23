@@ -11,10 +11,6 @@ path = "src/bin/which.rs"
 name = "open"
 path = "src/bin/open.rs"
 
-[[bin]]
-name = "say"
-path = "src/bin/say.rs"
-
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62", features = [
     "Foundation",
