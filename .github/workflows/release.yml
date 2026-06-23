@@ -53,6 +53,7 @@ jobs:
             Select-Object -ExpandProperty name
           $files = @($bins | ForEach-Object { "target\release\$_.exe" })
           if ($files.Count -eq 0) { throw "bin target が見つかりません" }
+          $files += @("LICENSE", "THIRD_PARTY_LICENSES.txt")
           Compress-Archive -Path $files -DestinationPath $name -Force
           Write-Host "Packed: $($files -join ', ')"
           "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
