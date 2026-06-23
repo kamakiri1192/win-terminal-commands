@@ -10,7 +10,3 @@ path = "src/bin/which.rs"
 [[bin]]
 name = "open"
 path = "src/bin/open.rs"
-
-[[bin]]
-name = "md5"
-path = "src/bin/md5.rs"
