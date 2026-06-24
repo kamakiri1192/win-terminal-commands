@@ -207,7 +207,7 @@ mod tests {
 
         let matches = find_command(
             &OsString::from("tool"),
-            &[bin.clone()],
+            std::slice::from_ref(&bin),
             &[OsString::from(".EXE")],
             false,
         );

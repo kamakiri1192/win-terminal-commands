@@ -332,7 +332,11 @@ fn run_check(check_file: &OsString, quiet: bool) -> i32 {
         eprintln!("md5: WARNING: {failed} of {total} computed checksums did NOT match");
     }
     if malformed > 0 {
-        let plural = if malformed == 1 { "line is" } else { "lines are" };
+        let plural = if malformed == 1 {
+            "line is"
+        } else {
+            "lines are"
+        };
         eprintln!("md5: WARNING: {malformed} {plural} improperly formatted");
     }
 
@@ -596,18 +600,12 @@ mod tests {
     // RFC 1321 / MD5 reference test vectors.
     #[test]
     fn rfc1321_empty_string() {
-        assert_eq!(
-            hex(&Md5::digest(b"")),
-            "d41d8cd98f00b204e9800998ecf8427e"
-        );
+        assert_eq!(hex(&Md5::digest(b"")), "d41d8cd98f00b204e9800998ecf8427e");
     }
 
     #[test]
     fn rfc1321_single_a() {
-        assert_eq!(
-            hex(&Md5::digest(b"a")),
-            "0cc175b9c0f1b6a831c399e269772661"
-        );
+        assert_eq!(hex(&Md5::digest(b"a")), "0cc175b9c0f1b6a831c399e269772661");
     }
 
     #[test]
@@ -713,10 +711,8 @@ mod tests {
 
     #[test]
     fn parse_gnu_text_format() {
-        let (name, hash) = parse_checksum_line(
-            "900150983cd24fb0d6963f7d28e17f72  hello.txt",
-        )
-        .expect("GNU text line");
+        let (name, hash) = parse_checksum_line("900150983cd24fb0d6963f7d28e17f72  hello.txt")
+            .expect("GNU text line");
         assert_eq!(name, "hello.txt");
         assert_eq!(hash, "900150983cd24fb0d6963f7d28e17f72");
     }
@@ -739,17 +735,14 @@ mod tests {
 
     #[test]
     fn parse_bsd_format_case_insensitive_prefix() {
-        let (name, _) = parse_checksum_line(
-            "md5 (hello.txt) = 900150983cd24fb0d6963f7d28e17f72",
-        )
-        .unwrap();
+        let (name, _) =
+            parse_checksum_line("md5 (hello.txt) = 900150983cd24fb0d6963f7d28e17f72").unwrap();
         assert_eq!(name, "hello.txt");
     }
 
     #[test]
     fn parse_uppercase_hex_is_lowercased() {
-        let (_, hash) =
-            parse_checksum_line("MD5 (x) = 900150983CD24FB0D6963F7D28E17F72").unwrap();
+        let (_, hash) = parse_checksum_line("MD5 (x) = 900150983CD24FB0D6963F7D28E17F72").unwrap();
         assert_eq!(hash, "900150983cd24fb0d6963f7d28e17f72");
     }
 
@@ -779,25 +772,18 @@ mod tests {
     #[test]
     fn parse_rejects_leading_whitespace() {
         // Leading whitespace shifts the hash off column 0, so the line is malformed.
-        assert!(parse_checksum_line(
-            " 900150983cd24fb0d6963f7d28e17f72  hello.txt"
-        )
-        .is_none());
+        assert!(parse_checksum_line(" 900150983cd24fb0d6963f7d28e17f72  hello.txt").is_none());
     }
 
     #[test]
     fn parse_rejects_trailing_whitespace_after_hash() {
         // A stray trailing space changes the hash field length -> malformed.
-        assert!(parse_checksum_line(
-            "MD5 (x) = 900150983cd24fb0d6963f7d28e17f72 "
-        )
-        .is_none());
+        assert!(parse_checksum_line("MD5 (x) = 900150983cd24fb0d6963f7d28e17f72 ").is_none());
     }
 
     #[test]
     fn parse_string_takes_next_argument() {
-        let opts =
-            parse_args([OsString::from("-s"), OsString::from("hello")]).unwrap();
+        let opts = parse_args([OsString::from("-s"), OsString::from("hello")]).unwrap();
         assert_eq!(opts.string.as_deref(), Some(OsStr::new("hello")));
     }
 
@@ -825,8 +811,7 @@ mod tests {
 
     #[test]
     fn parse_check_takes_next_argument() {
-        let opts =
-            parse_args([OsString::from("-c"), OsString::from("sums.md5")]).unwrap();
+        let opts = parse_args([OsString::from("-c"), OsString::from("sums.md5")]).unwrap();
         assert_eq!(opts.check.as_deref(), Some(OsStr::new("sums.md5")));
     }
 
@@ -883,8 +868,7 @@ mod tests {
 
     #[test]
     fn parse_short_flag_consuming_next_argument() {
-        let opts =
-            parse_args([OsString::from("-qs"), OsString::from("hello")]).unwrap();
+        let opts = parse_args([OsString::from("-qs"), OsString::from("hello")]).unwrap();
         assert!(opts.quiet);
         assert_eq!(opts.string.as_deref(), Some(OsStr::new("hello")));
     }

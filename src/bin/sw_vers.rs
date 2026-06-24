@@ -75,10 +75,7 @@ where
                 return Err(format!("unknown option: {other}"));
             }
             Some(_) => {
-                return Err(format!(
-                    "unexpected argument: {}",
-                    arg.to_string_lossy()
-                ));
+                return Err(format!("unexpected argument: {}", arg.to_string_lossy()));
             }
             None => return Err("argument is not valid Unicode".to_string()),
         }
@@ -89,9 +86,11 @@ where
 
 fn set_field(options: &mut Options, field: Field) -> Result<(), String> {
     if options.field.is_some() {
-        return Err("only one of -productName, -productVersion, -productVersionExtra or \
+        return Err(
+            "only one of -productName, -productVersion, -productVersionExtra or \
                     -buildVersion may be specified"
-            .to_string());
+                .to_string(),
+        );
     }
     options.field = Some(field);
     Ok(())
@@ -150,9 +149,8 @@ fn gather_version_info() -> Result<VersionInfo, String> {
 
     // RtlGetVersion returns the true OS version regardless of the application
     // manifest (unlike GetVersionEx, which under-reports without a manifest).
-    let (major, minor, build) = win::os_version_numbers().ok_or_else(|| {
-        "could not determine the Windows version via RtlGetVersion".to_string()
-    })?;
+    let (major, minor, build) = win::os_version_numbers()
+        .ok_or_else(|| "could not determine the Windows version via RtlGetVersion".to_string())?;
 
     let product_version = format!("{major}.{minor}.{build}");
 
@@ -363,28 +361,23 @@ mod tests {
     fn render_single_field_appends_newline() {
         let info = sample();
         assert_eq!(render(Some(Field::ProductName), &info), "Windows\n");
-        assert_eq!(
-            render(Some(Field::ProductVersion), &info),
-            "10.0.22631\n"
-        );
-        assert_eq!(
-            render(Some(Field::ProductVersionExtra), &info),
-            "23H2\n"
-        );
+        assert_eq!(render(Some(Field::ProductVersion), &info), "10.0.22631\n");
+        assert_eq!(render(Some(Field::ProductVersionExtra), &info), "23H2\n");
         assert_eq!(render(Some(Field::BuildVersion), &info), "22631.4890\n");
     }
 
     #[test]
     fn parse_each_option_sets_its_field() {
-        assert_eq!(parse(&["-productName"]).unwrap().field, Some(Field::ProductName));
+        assert_eq!(
+            parse(&["-productName"]).unwrap().field,
+            Some(Field::ProductName)
+        );
         assert_eq!(
             parse(&["-productVersion"]).unwrap().field,
             Some(Field::ProductVersion)
         );
         assert_eq!(
-            parse(&["-productVersionExtra"])
-                .unwrap()
-                .field,
+            parse(&["-productVersionExtra"]).unwrap().field,
             Some(Field::ProductVersionExtra)
         );
         assert_eq!(
@@ -429,10 +422,7 @@ mod tests {
         assert_eq!(info.product_name, "Windows");
         // Major.Minor.Build, e.g. 10.0.22631
         assert!(
-            info.product_version
-                .split('.')
-                .count()
-                >= 3,
+            info.product_version.split('.').count() >= 3,
             "product version should look like Major.Minor.Build, got {}",
             info.product_version
         );
