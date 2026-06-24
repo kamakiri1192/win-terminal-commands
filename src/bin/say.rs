@@ -107,8 +107,12 @@ fn run(_options: Options) {
 
 fn gather_text(options: &Options) -> io::Result<String> {
     if let Some(path) = &options.file {
-        let bytes = std::fs::read(path)
-            .map_err(|e| io::Error::new(e.kind(), format!("cannot read {}: {e}", path.to_string_lossy())))?;
+        let bytes = std::fs::read(path).map_err(|e| {
+            io::Error::new(
+                e.kind(),
+                format!("cannot read {}: {e}", path.to_string_lossy()),
+            )
+        })?;
         return Ok(decode_bytes(&bytes));
     }
 
@@ -272,9 +276,13 @@ fn decode_bytes(bytes: &[u8]) -> String {
     if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
         String::from_utf8_lossy(&bytes[3..]).into_owned()
     } else if bytes.starts_with(&[0xFF, 0xFE]) {
-        utf16_from(bytes[2..].chunks_exact(2), |c| u16::from_le_bytes([c[0], c[1]]))
+        utf16_from(bytes[2..].chunks_exact(2), |c| {
+            u16::from_le_bytes([c[0], c[1]])
+        })
     } else if bytes.starts_with(&[0xFE, 0xFF]) {
-        utf16_from(bytes[2..].chunks_exact(2), |c| u16::from_be_bytes([c[0], c[1]]))
+        utf16_from(bytes[2..].chunks_exact(2), |c| {
+            u16::from_be_bytes([c[0], c[1]])
+        })
     } else {
         String::from_utf8_lossy(bytes).into_owned()
     }
@@ -303,9 +311,7 @@ fn select_index(
     voice: Option<&str>,
 ) -> Option<usize> {
     if let Some(query) = voice_id {
-        return voices
-            .iter()
-            .position(|v| v.id.eq_ignore_ascii_case(query));
+        return voices.iter().position(|v| v.id.eq_ignore_ascii_case(query));
     }
 
     if let Some(query) = voice {
@@ -354,7 +360,10 @@ mod engine {
 
         for index in 0..count {
             let voice = voices.GetAt(index).map_err(win_err)?;
-            let display = voice.DisplayName().map(hstring_to_string).unwrap_or_default();
+            let display = voice
+                .DisplayName()
+                .map(hstring_to_string)
+                .unwrap_or_default();
             let language = voice.Language().map(hstring_to_string).unwrap_or_default();
             let gender = voice.Gender().map(gender_label).unwrap_or_default();
             let id = voice.Id().map(hstring_to_string).unwrap_or_default();
@@ -411,13 +420,20 @@ mod engine {
 
         let size = stream.Size().map_err(win_err)? as u32;
         let reader = DataReader::CreateDataReader(&stream).map_err(win_err)?;
-        reader.LoadAsync(size).map_err(win_err)?.join().map_err(win_err)?;
+        reader
+            .LoadAsync(size)
+            .map_err(win_err)?
+            .join()
+            .map_err(win_err)?;
         let mut bytes = vec![0u8; size as usize];
         reader.ReadBytes(&mut bytes).map_err(win_err)?;
 
         if let Some(path) = output {
             std::fs::write(path, &bytes).map_err(|e| {
-                io::Error::new(e.kind(), format!("cannot write {}: {e}", path.to_string_lossy()))
+                io::Error::new(
+                    e.kind(),
+                    format!("cannot write {}: {e}", path.to_string_lossy()),
+                )
             })?;
             return Ok(());
         }
@@ -430,7 +446,8 @@ mod engine {
         }
 
         // PlaySoundW blocks until playback finishes when SND_ASYNC is not set.
-        let played = unsafe { PlaySoundW(bytes.as_ptr() as *const u16, core::ptr::null(), SND_MEMORY) };
+        let played =
+            unsafe { PlaySoundW(bytes.as_ptr() as *const u16, core::ptr::null(), SND_MEMORY) };
         if played == 0 {
             return Err(io::Error::other(
                 "playback failed (the audio device may be in use by another process)",
@@ -446,10 +463,16 @@ mod engine {
         for index in 0..count {
             let voice = voices.GetAt(index).map_err(win_err)?;
             fields.push(VoiceFields {
-                display: voice.DisplayName().map(hstring_to_string).unwrap_or_default(),
+                display: voice
+                    .DisplayName()
+                    .map(hstring_to_string)
+                    .unwrap_or_default(),
                 id: voice.Id().map(hstring_to_string).unwrap_or_default(),
                 language: voice.Language().map(hstring_to_string).unwrap_or_default(),
-                description: voice.Description().map(hstring_to_string).unwrap_or_default(),
+                description: voice
+                    .Description()
+                    .map(hstring_to_string)
+                    .unwrap_or_default(),
             });
         }
         Ok(fields)
@@ -507,22 +530,19 @@ mod tests {
 
     #[test]
     fn parses_list_flag() {
-        let opts = parse_args([OsString::from("--list-voices")].into_iter()).unwrap();
+        let opts = parse_args([OsString::from("--list-voices")]).unwrap();
         assert!(opts.list_voices);
         assert!(opts.text.is_empty());
     }
 
     #[test]
     fn parses_voice_and_text() {
-        let opts = parse_args(
-            [
-                OsString::from("-v"),
-                OsString::from("Haruka"),
-                OsString::from("hello"),
-                OsString::from("world"),
-            ]
-            .into_iter(),
-        )
+        let opts = parse_args([
+            OsString::from("-v"),
+            OsString::from("Haruka"),
+            OsString::from("hello"),
+            OsString::from("world"),
+        ])
         .unwrap();
         assert_eq!(opts.voice.as_deref(), Some(OsStr::new("Haruka")));
         assert_eq!(
@@ -533,22 +553,18 @@ mod tests {
 
     #[test]
     fn parses_voice_equals_form() {
-        let opts =
-            parse_args([OsString::from("--voice=ja-JP"), OsString::from("hi")].into_iter()).unwrap();
+        let opts = parse_args([OsString::from("--voice=ja-JP"), OsString::from("hi")]).unwrap();
         assert_eq!(opts.voice.as_deref(), Some(OsStr::new("ja-JP")));
     }
 
     #[test]
     fn parses_rate_and_volume() {
-        let opts = parse_args(
-            [
-                OsString::from("--rate=5"),
-                OsString::from("--volume"),
-                OsString::from("80"),
-                OsString::from("hi"),
-            ]
-            .into_iter(),
-        )
+        let opts = parse_args([
+            OsString::from("--rate=5"),
+            OsString::from("--volume"),
+            OsString::from("80"),
+            OsString::from("hi"),
+        ])
         .unwrap();
         assert_eq!(opts.rate, Some(5));
         assert_eq!(opts.volume, Some(80));
@@ -556,21 +572,18 @@ mod tests {
 
     #[test]
     fn rejects_bad_rate() {
-        assert!(parse_args([OsString::from("--rate=fast")].into_iter()).is_err());
-        assert!(parse_args([OsString::from("-r")].into_iter()).is_err());
+        assert!(parse_args([OsString::from("--rate=fast")]).is_err());
+        assert!(parse_args([OsString::from("-r")]).is_err());
     }
 
     #[test]
     fn parses_file_and_output() {
-        let opts = parse_args(
-            [
-                OsString::from("-f"),
-                OsString::from("in.txt"),
-                OsString::from("-o"),
-                OsString::from("out.wav"),
-            ]
-            .into_iter(),
-        )
+        let opts = parse_args([
+            OsString::from("-f"),
+            OsString::from("in.txt"),
+            OsString::from("-o"),
+            OsString::from("out.wav"),
+        ])
         .unwrap();
         assert_eq!(opts.file.as_deref(), Some(OsStr::new("in.txt")));
         assert_eq!(opts.output.as_deref(), Some(OsStr::new("out.wav")));

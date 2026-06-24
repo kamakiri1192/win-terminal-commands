@@ -15,9 +15,9 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, UNIX_EPOCH};
 
+use flate2::read::MultiGzDecoder;
 use flate2::write::GzEncoder;
 use flate2::{Compression, GzBuilder};
-use flate2::read::MultiGzDecoder;
 
 /// Default compression level when none is requested (matches GNU gzip).
 const DEFAULT_LEVEL: u32 = 6;
@@ -56,7 +56,10 @@ pub fn run(program: &str, default_decompress: bool) -> i32 {
         return 0;
     }
     if opts.version {
-        println!("{program} (win-terminal-commands) {}", env!("CARGO_PKG_VERSION"));
+        println!(
+            "{program} (win-terminal-commands) {}",
+            env!("CARGO_PKG_VERSION")
+        );
         return 0;
     }
 
@@ -115,7 +118,10 @@ fn process_compress(path: &Path, opts: &Options, level: u32) -> Result<(), Strin
     if !opts.force && has_gz_suffix(path) {
         // Mirror gzip: by default refuse to double-compress a `.gz` file.
         // `-f` overrides this guard.
-        eprintln!("gzip: {} already has .gz suffix -- unchanged", path.display());
+        eprintln!(
+            "gzip: {} already has .gz suffix -- unchanged",
+            path.display()
+        );
         return Ok(());
     }
 
@@ -182,7 +188,10 @@ fn process_decompress(path: &Path, opts: &Options) -> Result<(), String> {
     // timestamp restore fail on Windows.
     if let Some(mtime) = read_gzip_mtime(path) {
         if let Err(error) = restore_mtime(&output, mtime) {
-            eprintln!("gzip: {}: cannot restore time stamp: {error}", output.display());
+            eprintln!(
+                "gzip: {}: cannot restore time stamp: {error}",
+                output.display()
+            );
         }
     }
     copy_mode(path, &output);
@@ -349,10 +358,7 @@ fn read_gzip_mtime(path: &Path) -> Option<u32> {
 fn restore_mtime(path: &Path, mtime: u32) -> io::Result<()> {
     let time = UNIX_EPOCH + Duration::from_secs(mtime as u64);
     let times = fs::FileTimes::new().set_modified(time);
-    OpenOptions::new()
-        .write(true)
-        .open(path)?
-        .set_times(times)
+    OpenOptions::new().write(true).open(path)?.set_times(times)
 }
 
 /// Delete the source file after a successful (de)compression.
@@ -375,10 +381,7 @@ fn remove_source(path: &Path) -> io::Result<()> {
             }
             match fs::remove_file(path) {
                 Ok(()) => Ok(()),
-                Err(retry) => Err(io::Error::new(
-                    retry.kind(),
-                    format!("{initial}; {retry}"),
-                )),
+                Err(retry) => Err(io::Error::new(retry.kind(), format!("{initial}; {retry}"))),
             }
         }
     }
@@ -729,10 +732,7 @@ mod tests {
         // Pin the source to a known old mtime (seconds granularity).
         let pinned_secs: u64 = 1_000_000_000;
         let pinned = UNIX_EPOCH + Duration::from_secs(pinned_secs);
-        let handle = fs::OpenOptions::new()
-            .write(true)
-            .open(&src)
-            .unwrap();
+        let handle = fs::OpenOptions::new().write(true).open(&src).unwrap();
         handle
             .set_times(fs::FileTimes::new().set_modified(pinned))
             .unwrap();
@@ -781,7 +781,9 @@ mod tests {
         let pinned_secs: u64 = 1_234_567_890;
         let handle = fs::OpenOptions::new().write(true).open(&src).unwrap();
         handle
-            .set_times(fs::FileTimes::new().set_modified(UNIX_EPOCH + Duration::from_secs(pinned_secs)))
+            .set_times(
+                fs::FileTimes::new().set_modified(UNIX_EPOCH + Duration::from_secs(pinned_secs)),
+            )
             .unwrap();
         drop(handle);
 

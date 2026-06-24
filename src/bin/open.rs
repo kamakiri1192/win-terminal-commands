@@ -252,7 +252,14 @@ fn launch(file: &OsStr, verb: Option<&str>, params: Option<&str>) -> bool {
 
     // SW_SHOWNORMAL = 1
     let result = unsafe {
-        ShellExecuteW(0, verb_ptr, file_w.as_ptr(), params_ptr, std::ptr::null(), 1)
+        ShellExecuteW(
+            0,
+            verb_ptr,
+            file_w.as_ptr(),
+            params_ptr,
+            std::ptr::null(),
+            1,
+        )
     };
 
     if (result as usize) <= 32 {
@@ -311,14 +318,11 @@ mod tests {
 
     #[test]
     fn parse_app_option_takes_next_argument() {
-        let opts = parse_args(
-            [
-                OsString::from("-a"),
-                OsString::from("notepad"),
-                OsString::from("a.txt"),
-            ]
-            .into_iter(),
-        )
+        let opts = parse_args([
+            OsString::from("-a"),
+            OsString::from("notepad"),
+            OsString::from("a.txt"),
+        ])
         .unwrap();
         assert_eq!(opts.app.as_deref(), Some(OsStr::new("notepad")));
         assert_eq!(opts.targets, vec![OsString::from("a.txt")]);
@@ -326,10 +330,7 @@ mod tests {
 
     #[test]
     fn parse_app_equals_form() {
-        let opts = parse_args(
-            [OsString::from("--app=notepad"), OsString::from("a.txt")].into_iter(),
-        )
-        .unwrap();
+        let opts = parse_args([OsString::from("--app=notepad"), OsString::from("a.txt")]).unwrap();
         assert_eq!(opts.app.as_deref(), Some(OsStr::new("notepad")));
     }
 
